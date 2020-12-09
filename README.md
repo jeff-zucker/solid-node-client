@@ -2,6 +2,62 @@
                                                                                
 -- **a nodejs client for Solid** --    
 
+**NOTE:** This is an experimental branch that provides a plugin system including support for using solid-client-authn-node.  For the time being, to use with NSS or PSS, skip this next session and got straight to [the old docs](#old).
+
+If you want to use ESS or CSS, here's how:
+
+## 1. get a cookie (do this once, then it's good for several weeks)
+
+From the command-line, 
+
+* Change to the [./node_modules/@inrupt/solid-client-authn-node/example/bootstrappedApp/src/](./node_modules/@inrupt/solid-client-authn-node/example/bootstrappedApp/src/),
+
+* Run the bootstrap.js script.  It will prompt you for user name and identity provider, then show you a URL.  Go to that URL in your browser and follow the steps to login.  Once you've logged in, you should see a message telling you to close the login window, and back on the command line you should see a cookie with the tokens and secrets you need to login.  Copy the cookie text and save it in a safe place.
+
+## 2. use the cookie to login
+
+Retrieve the cookie as a json string from wherever you stored it in step #1.
+Then use it in a script or app like this (replacing the $COOKIE varibales with the ones from the cookie):
+```javascript
+const {SolidNodeClient} = require('solid-node-client');
+const client = new SolidNodeClient({ handlers : 
+  { https: 'solid-client-authn-node' }
+});
+client.login({
+      clientName: $COOKIE.clientName,
+        clientId: $COOKIE.clientId,
+    clientSecret: $COOKIE.clientSecret,
+    refreshToken: $COOKIE.token,
+      oidcIssuer: $COOKIE.oidcIssuer
+}).then( (session) => {
+if( session.info.isLoggedIn ) {
+  console.log(`Successfully logged in!`)
+  // client.fetch() will now be an authenticated fetch on ESS/CSS
+}
+```   
+That's all!
+
+## Working with plugins
+
+Solid-Node-Client comes with default handlers for three types of fetches, so a call to *new SolidNodeClient()* with no arguments is the equivalent of doing this:
+```javascript
+    const client = new SolidNodeCient({ handlers : {
+      https    : 'solid-auth-fetcher',  // authenticated web fetches
+      file     : 'solid-rest-file',     // local file system fetches
+      fallback : 'node-fetch',          // all other fetches
+    }})
+```
+Users may specify 'solid-client-authn-node' as the https fetcher and may also spcify a handler for mem as 'solid-rest-mem' (this means that mem://foo/bar/ is an in-memory simulated container accessible as a serverless pod).
+
+Users may also specify any of the fetchers as objects that they have imported and instantiated.  So if you have a new auth package you could do this:
+```javascript
+    const client = new SolidNodeCient({ handlers : {
+      https    : new yourCustomAuthLibrary() // authenticated web fetches
+    }})
+```
+  
+## <a name="old">Old Documentation (works on NSS for now)</a>
+
 This library provides access to [Solid](https://solidproject.org/) from the command line and from local scripts and apps which either run in the console or in a local browser based context like electron. It can be used to move resources back and forth between a local commputer and one or more  pods, carry out remote operations on pods, and can also treat your local file system as a serverless pod.
 
 Solid-Node-Client uses [solid-auth-fetcher](https://github.com/solid/solid-auth-fetcher) to provide session management and fetching for https: URLs and uses [solid-rest](https://github.com/solid/solid-rest) to provide solid-like fetches on file: and other non-http URLs.  It supports login and authenticated fetches to NSS servers.  Support for login to other servers will be added in the future.

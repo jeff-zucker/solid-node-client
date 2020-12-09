@@ -11,9 +11,14 @@ const $rdf = require('rdflib');
 const client = new SolidRest({ parser:$rdf })
 */
 /* SOLID-NODE-CLIENT */
-const $rdf = require('rdflib') 
+const $rdf = require('rdflib');
+global.$rdf = $rdf;
 const SolidNodeClient = require('../').SolidNodeClient
-const client = new SolidNodeClient({parser:$rdf})
+const client = new SolidNodeClient({
+  handlers : {
+    app : 'solid-rest-mem'
+  },
+})
 
 
 /** Silence rdflib chatty information about patch
@@ -35,7 +40,7 @@ let allfails = 0
 async function main(){
   await run("app:")
   await run("file:")
-  // await run("https:")
+//  await run("https:")
   if(allfails>0){
     process.exit(1)
   }
